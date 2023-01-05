@@ -1,5 +1,4 @@
 import Head from 'next/head'
-import styles from '../styles/Home.module.css'
 import dynamic from "next/dynamic";
 import '@sendbird/uikit-react/dist/index.css';
 
@@ -17,7 +16,7 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
+      <main>
         <DynamicAppWithNoSSR />
       </main>
     </>
