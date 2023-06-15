@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sendbird-uikit-nextjs-sample
+description: Simple demo app that add Sendbird UIKit V3 to a Next.js 13 application.
+  annotations:
+    github.com/project-slug: sendbird/sendbird-uikit-nextjs-sample
+spec:
+  type: library
+  lifecycle: production
+  owner: dep-developer-experience
+  system: sendbird-uikit
