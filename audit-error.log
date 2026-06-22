@@ -1,0 +1,40 @@
+npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 322 packages, and audited 323 packages in 18s
+
+134 packages are looking for funding
+  run `npm fund` for details
+
+4 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+changed 2 packages, and audited 323 packages in 4s
+
+135 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+postcss  <8.5.10
+Severity: moderate
+PostCSS has XSS via Unescaped </style> in its CSS Stringify Output - https://github.com/advisories/GHSA-qx2v-qp2m-jg93
+fix available via `npm audit fix --force`
+Will install next@9.3.3, which is a breaking change
+node_modules/postcss
+  next  9.3.4-canary.0 - 16.3.0-canary.5
+  Depends on vulnerable versions of postcss
+  node_modules/next
+
+2 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
