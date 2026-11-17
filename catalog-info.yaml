@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: sendbird-uikit-nextjs-sample
-description: Simple demo app that add Sendbird UIKit V3 to a Next.js 13 application.
+  description: Next.js App Router sample that connects Sendbird UIKit for React with session tokens issued by a Route Handler.
   annotations:
     github.com/project-slug: sendbird/sendbird-uikit-nextjs-sample
 spec:
