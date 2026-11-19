@@ -1,0 +1,11 @@
+.sendbird-theme--light .sendbird-conversation__messages {
+  background-color: #e2dcd2;
+}
+
+.sendbird-theme--dark .sendbird-conversation__messages {
+  background-color: #0f171b;
+}
+
+.sendbird-channel-header .sendbird-ui-header__right {
+  max-width: none;
+}
