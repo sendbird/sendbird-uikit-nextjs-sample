@@ -14,11 +14,15 @@ import { SessionHandler, type User } from "@sendbird/chat";
 import type { GroupChannelCreateParams, SendbirdGroupChat } from "@sendbird/chat/groupChannel";
 import SendbirdProvider from "@sendbird/uikit-react/SendbirdProvider";
 import GroupChannelList from "@sendbird/uikit-react/GroupChannelList";
+import GroupChannelListHeader from "@sendbird/uikit-react/GroupChannelList/components/GroupChannelListHeader";
+import AddGroupChannel from "@sendbird/uikit-react/GroupChannelList/components/AddGroupChannel";
 import GroupChannel from "@sendbird/uikit-react/GroupChannel";
 import ChannelSettings from "@sendbird/uikit-react/ChannelSettings";
 import useSendbirdStateContext from "@sendbird/uikit-react/useSendbirdStateContext";
 import "@sendbird/uikit-react/dist/index.css";
+import "./chat.css";
 import { signOut } from "../login/actions";
+import { colorSet, stringSet, uikitOptions } from "./uikit-config";
 
 const APP_ID = process.env.NEXT_PUBLIC_SENDBIRD_APP_ID ?? "";
 const MOBILE_BREAKPOINT = "768px";
@@ -40,7 +44,7 @@ function reuseExistingChannel(params: GroupChannelCreateParams, users: User[]): 
   if (!params.invitedUserIds?.length || users.some((user) => !user.isActive)) {
     throw new Error("This user can't receive messages.");
   }
-  return { ...params, isDistinct: true };
+  return { ...params, isDistinct: true, name: "" };
 }
 
 function useMediaQuery(query: string) {
@@ -136,38 +140,29 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-2 text-sm dark:border-zinc-800">
-        <span>
-          Signed in as <strong>{session.userId}</strong>
-        </span>
-        <form action={signOut}>
-          <button type="submit" className="font-medium underline">
-            Sign out
-          </button>
-        </form>
-      </header>
-      <div className="min-h-0 flex-1">
-        <SendbirdProvider
-          appId={APP_ID}
-          userId={session.userId}
-          accessToken={session.token}
-          configureSession={configureSession}
-          eventHandlers={eventHandlers}
-          breakpoint={MOBILE_BREAKPOINT}
-          theme={prefersDark ? "dark" : "light"}
-          onBeforeStartDirectMessage={reuseExistingChannel}
-          onStartDirectMessage={openDirectMessage}
-        >
-          <ChatLayout
-            channelUrl={channelUrl}
-            showSettings={showSettings}
-            autoSelectedUrl={autoSelectedUrl}
-            openChannel={openChannel}
-            setShowSettings={setShowSettings}
-          />
-        </SendbirdProvider>
-      </div>
+    <div className="h-dvh">
+      <SendbirdProvider
+        appId={APP_ID}
+        userId={session.userId}
+        accessToken={session.token}
+        configureSession={configureSession}
+        eventHandlers={eventHandlers}
+        breakpoint={MOBILE_BREAKPOINT}
+        theme={prefersDark ? "dark" : "light"}
+        uikitOptions={uikitOptions}
+        colorSet={colorSet}
+        stringSet={stringSet}
+        onBeforeStartDirectMessage={reuseExistingChannel}
+        onStartDirectMessage={openDirectMessage}
+      >
+        <ChatLayout
+          channelUrl={channelUrl}
+          showSettings={showSettings}
+          autoSelectedUrl={autoSelectedUrl}
+          openChannel={openChannel}
+          setShowSettings={setShowSettings}
+        />
+      </SendbirdProvider>
     </div>
   );
 }
@@ -190,6 +185,23 @@ function ChatLayout({ channelUrl, showSettings, autoSelectedUrl, openChannel, se
       selectedChannelUrl={channelUrl}
       disableAutoSelect={isMobile}
       disableUserProfile
+      renderHeader={() => (
+        <GroupChannelListHeader
+          renderRight={() => (
+            <div className="flex items-center gap-2">
+              <AddGroupChannel />
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="whitespace-nowrap text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
+          )}
+        />
+      )}
       onChannelSelect={(channel) => openChannel(channel?.url ?? "", !isMobile && !channelUrl)}
       onChannelCreated={(channel) => openChannel(channel.url)}
       onCreateChannelClick={({ users, onClose, channelType }) => {
@@ -197,6 +209,7 @@ function ChatLayout({ channelUrl, showSettings, autoSelectedUrl, openChannel, se
         onClose();
         sdk.groupChannel
           .createChannel({
+            name: "",
             invitedUserIds: users,
             operatorUserIds: [config.userId],
             isDistinct: type === "group" && users.length === 1,
