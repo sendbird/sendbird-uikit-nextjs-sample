@@ -8,7 +8,7 @@ The chat has one-to-one and group chats with read receipts, typing indicators, v
 
 1. The user signs in to the app. This sample uses a demo sign-in that keeps the user ID in a signed cookie.
 2. The chat page calls `POST /api/sendbird/token`. The Route Handler checks who is signed in, creates the Sendbird user if it doesn't exist yet, and [issues a session token](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/issue-a-session-token) with the Platform API.
-3. The browser passes the token to `SendbirdProvider` as `accessToken`. When the token expires, `configureSession` calls the same route for a new one. If that fails or the session ends, the page sends the user back to sign in or shows an error.
+3. The browser passes the token to `SendbirdProvider` as `accessToken`. When the token expires, `configureSession` calls the same route for a new one. If connecting or a renewal fails, or the session ends, the page sends the user back to sign in or shows an error.
 4. Signing out disconnects the page from Sendbird and deletes the session cookie. After the response is sent, the server [revokes all of the user's session tokens](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/revoke-all-session-tokens) with the Platform API, so a token copied before sign-out stops working and the user's other chat tabs in the same browser go back to the sign-in page.
 
 The API token stays on the server. The browser only gets the application ID and the user's session token.

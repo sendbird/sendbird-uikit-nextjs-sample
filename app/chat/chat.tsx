@@ -10,7 +10,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { SessionHandler, type User } from "@sendbird/chat";
+import { SendbirdErrorCode, SessionHandler, type SendbirdError, type User } from "@sendbird/chat";
 import type { GroupChannelCreateParams, SendbirdGroupChat } from "@sendbird/chat/groupChannel";
 import SendbirdProvider from "@sendbird/uikit-react/SendbirdProvider";
 import GroupChannelList from "@sendbird/uikit-react/GroupChannelList";
@@ -94,16 +94,26 @@ export default function Chat() {
     };
   }, [handleSessionFailure]);
 
-  const connected = useRef(false);
+  const signingOut = useRef(false);
+  const handleConnectionLoss = useCallback(
+    (reason: Error) => {
+      if (signingOut.current) return;
+      fetchChatSession().then(
+        () => handleSessionFailure(reason),
+        (signedOut: Error) => handleSessionFailure(signedOut),
+      );
+    },
+    [handleSessionFailure],
+  );
   const eventHandlers = useMemo(
     () => ({
       connection: {
-        onConnected: () => {
-          connected.current = true;
+        onFailed: (error: SendbirdError) => {
+          if (error.code !== SendbirdErrorCode.DELAYED_CONNECTING) handleConnectionLoss(error);
         },
       },
     }),
-    [],
+    [handleConnectionLoss],
   );
 
   const userId = session?.userId;
@@ -121,18 +131,12 @@ export default function Chat() {
               handleSessionFailure(reason);
             });
         },
-        onSessionClosed: () => {
-          if (!connected.current) return;
-          fetchChatSession().then(
-            () => handleSessionFailure(new Error("Chat session ended.")),
-            (reason: Error) => handleSessionFailure(reason),
-          );
-        },
+        onSessionClosed: () => handleConnectionLoss(new Error("Chat session ended.")),
       }),
-    [userId, handleSessionFailure],
+    [userId, handleSessionFailure, handleConnectionLoss],
   );
   const beforeSignOut = useCallback(() => {
-    connected.current = false;
+    signingOut.current = true;
   }, []);
 
   if (error) {
