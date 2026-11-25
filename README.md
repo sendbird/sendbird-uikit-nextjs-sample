@@ -9,6 +9,7 @@ The chat has one-to-one and group chats with read receipts, typing indicators, v
 1. The user signs in to the app. This sample uses a demo sign-in that keeps the user ID in a signed cookie.
 2. The chat page calls `POST /api/sendbird/token`. The Route Handler checks who is signed in, creates the Sendbird user if it doesn't exist yet, and [issues a session token](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/issue-a-session-token) with the Platform API.
 3. The browser passes the token to `SendbirdProvider` as `accessToken`. When the token expires, `configureSession` calls the same route for a new one. If that fails or the session ends, the page sends the user back to sign in or shows an error.
+4. Signing out disconnects the page from Sendbird and deletes the session cookie. After the response is sent, the server [revokes all of the user's session tokens](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/revoke-all-session-tokens) with the Platform API, so a token copied before sign-out stops working and the user's other chat tabs in the same browser go back to the sign-in page.
 
 The API token stays on the server. The browser only gets the application ID and the user's session token.
 
@@ -89,7 +90,7 @@ UIKit renders in the browser. Load it from a Client Component with `next/dynamic
 | `401` from `/api/sendbird/token` | Nobody is signed in. Sign in again. |
 | `502` from `/api/sendbird/token` | Check `NEXT_PUBLIC_SENDBIRD_APP_ID` and `SENDBIRD_API_TOKEN`. The server log shows which Platform API call failed. |
 | "You cannot record the voice since voice recording is not permitted in your device system setting", or the recorder doesn't start | Allow microphone access for the site in the browser and in the system settings. Browsers allow the microphone only on `localhost` or HTTPS. |
-| `Chat couldn't connect: Chat session ended.` | The user's session tokens were revoked, or the user was deactivated, while the chat was open. Reload the page to connect with a new token. A deactivated user can't connect until you activate the user again in the dashboard. |
+| `Chat couldn't connect: Chat session ended.` | The user's session tokens were revoked while the chat was open, for example because the user signed out in another browser, or the user was deactivated. Reload the page to connect with a new token. A deactivated user can't connect until you activate the user again in the dashboard. |
 | `500` from `/api/sendbird/token`, or "A server error occurred" after you sign in | Check the server log. `SESSION_SECRET must be at least 32 characters.` or `Set SESSION_SECRET before running in production.` means `SESSION_SECRET` is missing or too short. Set it to at least 32 random characters, for example from `openssl rand -base64 32`, restart the app, and sign in again. |
 
 ## Versions

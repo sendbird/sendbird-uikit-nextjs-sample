@@ -122,11 +122,18 @@ export default function Chat() {
             });
         },
         onSessionClosed: () => {
-          if (connected.current) handleSessionFailure(new Error("Chat session ended."));
+          if (!connected.current) return;
+          fetchChatSession().then(
+            () => handleSessionFailure(new Error("Chat session ended.")),
+            (reason: Error) => handleSessionFailure(reason),
+          );
         },
       }),
     [userId, handleSessionFailure],
   );
+  const beforeSignOut = useCallback(() => {
+    connected.current = false;
+  }, []);
 
   if (error) {
     return (
@@ -159,6 +166,7 @@ export default function Chat() {
           autoSelectedUrl={autoSelectedUrl}
           openChannel={openChannel}
           setShowSettings={setShowSettings}
+          beforeSignOut={beforeSignOut}
         />
       </SendbirdProvider>
     </div>
@@ -171,12 +179,29 @@ type ChatLayoutProps = {
   autoSelectedUrl: string;
   openChannel: (url: string, autoSelected?: boolean) => void;
   setShowSettings: Dispatch<SetStateAction<boolean>>;
+  beforeSignOut: () => void;
 };
 
-function ChatLayout({ channelUrl, showSettings, autoSelectedUrl, openChannel, setShowSettings }: ChatLayoutProps) {
+function ChatLayout({
+  channelUrl,
+  showSettings,
+  autoSelectedUrl,
+  openChannel,
+  setShowSettings,
+  beforeSignOut,
+}: ChatLayoutProps) {
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const { stores, config } = useSendbirdStateContext();
   const sdk: SendbirdGroupChat = stores.sdkStore.sdk;
+  const sdkRef = useRef(sdk);
+  useEffect(() => {
+    sdkRef.current = sdk;
+  }, [sdk]);
+  const handleSignOut = async () => {
+    beforeSignOut();
+    await sdkRef.current.disconnect?.().catch(console.error);
+    await signOut();
+  };
 
   const channelList = (
     <GroupChannelList
@@ -188,7 +213,7 @@ function ChatLayout({ channelUrl, showSettings, autoSelectedUrl, openChannel, se
           renderRight={() => (
             <div className="flex items-center gap-2">
               <AddGroupChannel />
-              <form action={signOut}>
+              <form action={handleSignOut}>
                 <button
                   type="submit"
                   className="whitespace-nowrap text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"

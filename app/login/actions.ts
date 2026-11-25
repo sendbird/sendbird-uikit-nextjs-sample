@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect, RedirectType } from "next/navigation";
-import { createSession, deleteSession, isValidUserId } from "@/lib/auth";
+import { after } from "next/server";
+import { createSession, deleteSession, getCurrentUser, isValidUserId } from "@/lib/auth";
+import { revokeSessionTokens } from "@/lib/sendbird";
 
 export async function signIn(formData: FormData) {
   const userId = String(formData.get("userId") ?? "").trim();
@@ -13,6 +15,10 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signOut() {
+  const user = await getCurrentUser();
   await deleteSession();
+  if (user) {
+    after(() => revokeSessionTokens(user.id).catch((error) => console.error(error)));
+  }
   redirect("/login", RedirectType.replace);
 }
