@@ -1,6 +1,9 @@
 import "server-only";
 
 const SESSION_TOKEN_TTL_MS = 60 * 60 * 1000;
+const PLATFORM_API_TIMEOUT_MS = 5_000;
+const REVOKE_ATTEMPTS = 3;
+const REVOKE_RETRY_DELAY_MS = 500;
 const USER_ALREADY_EXISTS = 400202;
 
 type PlatformApiResponse = {
@@ -20,6 +23,7 @@ async function callPlatformApi(method: "POST" | "DELETE", path: string, body?: u
     method,
     headers: { "Api-Token": apiToken, "Content-Type": "application/json; charset=utf8" },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(PLATFORM_API_TIMEOUT_MS),
   });
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   return { ok: res.ok, status: res.status, json };
@@ -46,8 +50,18 @@ export async function issueSessionToken(userId: string): Promise<string> {
 }
 
 export async function revokeSessionTokens(userId: string): Promise<void> {
-  const revoked = await callPlatformApi("DELETE", `/users/${encodeURIComponent(userId)}/token`);
-  if (!revoked.ok) {
-    throw new Error(`Revoking the session tokens failed with status ${revoked.status}.`);
+  for (let attempt = 1; attempt <= REVOKE_ATTEMPTS; attempt++) {
+    if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, REVOKE_RETRY_DELAY_MS));
+    let failure: unknown;
+    let retryable = true;
+    try {
+      const revoked = await callPlatformApi("DELETE", `/users/${encodeURIComponent(userId)}/token`);
+      if (revoked.ok) return;
+      failure = new Error(`Revoking the session tokens failed with status ${revoked.status}.`);
+      retryable = revoked.status === 429 || revoked.status >= 500;
+    } catch (error) {
+      failure = error;
+    }
+    if (!retryable || attempt === REVOKE_ATTEMPTS) throw failure;
   }
 }

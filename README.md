@@ -6,10 +6,10 @@ The chat has one-to-one and group chats with read receipts, typing indicators, v
 
 ## How it works
 
-1. The user signs in to the app. This sample uses a demo sign-in that keeps the user ID in a signed cookie.
+1. The user signs in to the app. This sample uses a demo sign-in that keeps the user ID in a signed cookie, which the server accepts for seven days.
 2. The chat page calls `POST /api/sendbird/token`. The Route Handler checks who is signed in, creates the Sendbird user if it doesn't exist yet, and [issues a session token](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/issue-a-session-token) with the Platform API.
 3. The browser passes the token to `SendbirdProvider` as `accessToken`. When the token expires, `configureSession` calls the same route for a new one. If connecting or a renewal fails, or the session ends, the page sends the user back to sign in or shows an error.
-4. Signing out disconnects the page from Sendbird and deletes the session cookie. After the response is sent, the server [revokes all of the user's session tokens](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/revoke-all-session-tokens) with the Platform API, so a token copied before sign-out stops working and the user's other chat tabs in the same browser go back to the sign-in page.
+4. Signing out disconnects the page from Sendbird and ends the app session on the server. Before it responds, the server [revokes all of the user's session tokens](https://sendbird.com/docs/chat/platform-api/v3/user/managing-session-tokens/revoke-all-session-tokens) with the Platform API: a token copied before sign-out stops working, and the user's other chat tabs in the same browser go back to the sign-in page. Signing in again gets a new token after the revoke, so it stays valid. If the revoke fails even after retrying temporary errors, the server logs the error, and the tokens stop working when they expire.
 
 The API token stays on the server. The browser only gets the application ID and the user's session token.
 
@@ -42,6 +42,8 @@ To chat with someone, sign in as a second user in another browser or a private w
 
 Voice messages need microphone access, which browsers allow only on `localhost` or HTTPS.
 
+`npm test` runs the tests with Vitest. They replace the Platform API with a fake, so they don't need `.env.local`.
+
 ## Chat features
 
 `app/chat/uikit-config.ts` holds the UIKit options. `chat.tsx` passes them to `SendbirdProvider`.
@@ -65,13 +67,15 @@ Voice messages need microphone access, which browsers allow only on `localhost` 
 | `app/chat/uikit-config.ts` | UIKit options |
 | `app/chat/chat.css` | Room for the sign-out button in the channel list header |
 | `app/login/` | Demo sign-in page and the sign-in and sign-out actions |
+| `__tests__/session.test.ts` | Tests the demo session, the token route, and sign-out |
 
 `chat.tsx` sets `replyType="QUOTE_REPLY"` and `showSearchIcon={false}` because this sample doesn't render `Thread` or `MessageSearch`, and `disableUserProfile` on `GroupChannelList` to turn off profile cards in the create-channel window. These props take precedence over your dashboard settings. When you add `Thread`, set `replyType="THREAD"` and open it from `onReplyInThreadClick`. When you add `MessageSearch`, set `showSearchIcon` and open it from `onSearchClick`.
 
 ## Before you ship
 
-- Replace the demo sign-in. Anyone who can open the app can sign in as any user ID, including users who already exist in your application, and read their chats. Make `getCurrentUser()` in `lib/auth.ts` return the signed-in user from your own authentication, such as Auth.js, Clerk, or Supabase Auth.
+- Replace the demo sign-in. Anyone who can open the app can sign in as any user ID, including users who already exist in your application, and read their chats. Make `getCurrentUser()` in `lib/auth.ts` return the signed-in user from your own authentication, such as Auth.js, Clerk, or Supabase Auth, and `null` once that session expires or ends.
 - Deploy the demo sign-in only with a test application, and set `SESSION_SECRET` there to a random string of at least 32 characters. `npm run dev` falls back to a development key, but a production build refuses to sign in without it.
+- The demo sign-in keeps signed-out sessions in server memory. With more than one server instance, or after a restart, the cookie of a signed-out session can still get a token until it expires, seven days after sign-in. Your authentication provider's sessions don't have this limit.
 - Keep `SENDBIRD_API_TOKEN` on the server. Never give it a `NEXT_PUBLIC_` prefix.
 - Set the same variables in your hosting provider's environment settings.
 - Session tokens here expire after one hour. Change `SESSION_TOKEN_TTL_MS` in `lib/sendbird.ts` to fit your app.
